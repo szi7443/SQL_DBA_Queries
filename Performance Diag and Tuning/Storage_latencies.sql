@@ -37,7 +37,7 @@ SELECT
                 ([num_of_reads] + [num_of_writes])) END,
    LEFT ([mf].[physical_name], 2) AS [Drive],
    DB_NAME ([vfs].[database_id]) AS [DB],
-   [mf].[physical_name]
+   [mf].[physical_name], [mf].name
 FROM
    sys.dm_io_virtual_file_stats (NULL,NULL) AS [vfs]
    JOIN sys.master_files AS [mf]
