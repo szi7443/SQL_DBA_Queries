@@ -1,4 +1,3 @@
-<<<<<<< HEAD
  /*
 The query checks only databases containing the string 'MES' in their name, change according to your needs
 */
@@ -44,4 +43,3 @@ ORDER BY  /*
 io_stall_read_ms / IIF(num_of_reads = 0,NULL ,num_of_reads) DESC ,*/
 io_stall_write_ms / IIF(num_of_writes = 0,NULL ,num_of_writes)  DESC
 ;
->>>>>>> e82c2245a17e24e8364b4554674c0d63a567f3b6
