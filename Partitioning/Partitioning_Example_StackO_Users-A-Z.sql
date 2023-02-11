@@ -135,7 +135,6 @@ go
 USE [StackOverflow]
 GO
 
-/****** Object:  Table [dbo].[Users]    Script Date: 07.02.2023 10:28:03 ******/
 SET ANSI_NULLS ON
 GO
 
@@ -219,6 +218,83 @@ N'G:\DATA\2021AndAbove.ndf', size = 8192kb, filegrowth = 65536kb ) TO filegroup
 go  
 -- alter partition scheme to add new range
 ALTER PARTITION SCHEME psYear NEXT USED [2021AndAbove];
+-- adding new range into partition function:
 ALTER PARTITION FUNCTION pfYear() SPLIT RANGE ('2021-01-01');
 
+/* TODO - partition merge */
+
+--tbd.
+
+
 DBCC SHOWFILESTATS;
+
+
+/****Partition switching example******/
+/* create a table we'll switch to partition that exists in multiple filegroups. Yes this example is a bit contrived, it's for demonstration purposes */
+/*Create table */
+CREATE TABLE [dbo].[UsersPToned_staging](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[AboutMe] [nvarchar](max) NULL,
+	[Age] [int] NULL,
+	[CreationDate] [datetime] NOT NULL,
+	[CreationDate_date] [date] NOT NULL,
+	[DisplayName] [nvarchar](40) NOT NULL,
+	[DownVotes] [int] NOT NULL,
+	[EmailHash] [nvarchar](40) NULL,
+	[LastAccessDate] [datetime] NOT NULL,
+	[Location] [nvarchar](100) NULL,
+	[Reputation] [int] NOT NULL,
+	[UpVotes] [int] NOT NULL,
+	[Views] [int] NOT NULL,
+	[WebsiteUrl] [nvarchar](200) NULL,
+	[AccountId] [int] NULL/*,
+ CONSTRAINT [PTonedPK_Users_Id] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+*/
+/*
+Just in case there is any doubt at all about this: If you specify a file group for a clustered index (primary key or unique constraint) 
+in a CREATE TABLE statement, and you also specify that the table should be created on a partition scheme, SQL Server honours
+the constraint - the partitioning scheme is ignored.
+*/
+
+) ON psYear(CreationDate_date);
+USE [StackOverflow]
+
+GO
+/**/
+CREATE UNIQUE CLUSTERED INDEX [PK_CI_Date_ID] ON [dbo].[UsersPToned_staging]
+(
+	[CreationDate_date] ASC,
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [psYear]([CreationDate_date])
+
+GO
+
+/*Before switch, let's see the stats: */
+SELECT DISTINCT
+    p.partition_number AS [Partition], 
+    fg.name AS [Filegroup], 
+    p.Rows
+FROM sys.partitions p
+    INNER JOIN sys.allocation_units au
+    ON au.container_id = p.hobt_id
+    INNER JOIN sys.filegroups fg
+    ON fg.data_space_id = au.data_space_id
+WHERE p.object_id = OBJECT_ID('UsersPToned_staging')
+ORDER BY [Partition];
+
+
+/*Now the switch*/
+ALTER TABLE UsersPToned_staging
+SWITCH PARTITION 12 TO UsersPToned PARTITION 12 /*Target table is partitioned as well - I need to tell the DST partition*/;
+/** WATCH OUT !!! **/
+/*
+The destination table does need to have the same set of indexes and not only column-wise, but also other atributes like "unique"! 
+*/
+/* Msg 4947, Level 16, State 1, Line 285
+ALTER TABLE SWITCH statement failed. There is no identical index in source table 'StackOverflow.dbo.UsersPToned' for the index 'PK_CI_Date_ID' in target table 'StackOverflow.dbo.UsersPToned_staging' .
+
+Completion time: 2023-02-11T12:01:42.1383394-08:00
+ */ 
