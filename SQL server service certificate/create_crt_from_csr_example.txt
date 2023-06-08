@@ -1,0 +1,1 @@
+certreq.exe -submit C:\path\to\your\csr\file.csr output_file_name.crt
