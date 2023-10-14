@@ -25,6 +25,13 @@ WITH PRIVATE KEY
 	DECRYPTION BY PASSWORD = 'PasswordPassword111Password-Do_Not_Lose_IT!'
 )
 
+/* 2023-10-14 - a database level cert creation was missing */
+
+USE HospitalDB
+CREATE DATABASE ENCRYPTION KEY 
+WITH ALGORITHM = AES_256
+ENCRYPTION BY SERVER CERTIFICATE HospitalDBTDECert 
+
 /*And enable TDE: */
 USE [HospitalDB]
 GO
@@ -37,3 +44,5 @@ in case you don't have certificate and certificate master key on the target serv
 System.Data.SqlClient.SqlError: Cannot find server certificate 
 with thumbprint '0x083.....'. (Microsoft.SqlServer.SmoExtended)
 */
+-- check DB encryption keys:
+SELECT * FROM sys.dm_database_encryption_keys;
