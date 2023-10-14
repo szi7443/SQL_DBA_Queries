@@ -1,3 +1,15 @@
+/*
+>>> How TDE encryption is created
+
+- DPAPI (data protection API) - windows service - decrypts service master key for SQL server
+- service master key decrypts key in master database (admin creates once per instance)
+- key in master database in turn decrypts certificate (admin creates)
+- certificate is then used for database key creation (admin creates)
+- encryption on the database is then turned on based on the server certificate
+
+
+*/
+
 use master;
 /*
 TDE Encryption implementation on a sample Hospital DB database
