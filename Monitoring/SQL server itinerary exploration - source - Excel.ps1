@@ -1,24 +1,26 @@
 import-module importexcel
 import-module dbatools
-$excel = Import-Excel 'C:\MyWork\SqlServersList.xlsx'
+$excel = Import-Excel 'C:\MyWork\SQLServersList.xlsx'
 $Array = @()
 $Servers = @{}
 #$q= 0
 foreach($server in $excel) {
     #$q++
-    $pk = Get-DbaProductKey -computername $server.'SQL Server'
+    $pk = Get-DbaProductKey -computername $server.'SQL Server' -ErrorAction SilentlyContinue 
     <# instance count is not used anywhere, it's only for demonstration here #>
     #$instance_count = ($pk | Measure-Object).Count
     $os = Get-DBAOperatingsystem $server.'SQL Server'
     $Instances = @()
     $Versions = @()
     $Editions = @()
+    $servername = $($server.'SQL Server').ToString()
+    Write-Host -BackgroundColor DarkGreen $servername
     foreach($i in $pk) {
         $Instances+= $i.sqlinstance
         $Versions += $i.version
         $Editions += $i.Edition
     }
-    $servername = $($server.'SQL Server').ToString()
+
     $Servers.Add($servername,@($Instances,$Versions,$Editions,$os.OSVersion))
 
    <# if($q -gt 2) {
