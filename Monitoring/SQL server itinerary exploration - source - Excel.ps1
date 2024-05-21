@@ -1,6 +1,6 @@
 import-module importexcel
 import-module dbatools
-$excel = Import-Excel 'C:\MyWork\SQLServersList.xlsx'
+$excel = Import-Excel ''C:\MyWork\SQLServersList.xlsx'
 $Array = @()
 $Servers = @{}
 #$q= 0
@@ -13,15 +13,17 @@ foreach($server in $excel) {
     $Instances = @()
     $Versions = @()
     $Editions = @()
+    $CPUs = @()
     $servername = $($server.'SQL Server').ToString()
     Write-Host -BackgroundColor DarkGreen $servername
     foreach($i in $pk) {
         $Instances+= $i.sqlinstance
         $Versions += $i.version
         $Editions += $i.Edition
+        $CPUs += (get-dbainstanceproperty -SqlInstance $i.SqlInstance | Where-Object {$_.Name -like 'Processors'}).Value
     }
-
-    $Servers.Add($servername,@($Instances,$Versions,$Editions,$os.OSVersion))
+     
+    $Servers.Add($servername,@($Instances,$Versions,$Editions,$CPUs,$os.OSVersion))
 
    <# if($q -gt 2) {
         break
@@ -31,9 +33,9 @@ foreach($server in $excel) {
 write-host "-------------------"
 foreach($key in  $Servers.Keys) {
     $m = 0
-    write-host $("ServerName:"+$key.ToString() + " " + "OS: " +$Servers[$key][3])
+    write-host $("ServerName:"+$key.ToString() + " " + "OS: " +$Servers[$key][4])
     for($q=0; $q -lt $Servers[$key][0].Length;$q++) {
-        write-host $("Instance: " + $Servers[$key][0][$q].ToString() + "; Versions: " + $Servers[$key][1][$q].ToString() + "; Editions:" + $Servers[$key][2][$q].ToString()) 
+        write-host $("Instance: " + $Servers[$key][0][$q].ToString() + "; Versions: " + $Servers[$key][1][$q].ToString() + "; Editions:" + $Servers[$key][2][$q].ToString()+"; Cores:"+$Servers[$key][3][$q].ToString()) 
     }
 #    write-host $Servers[$key][3]
 }
